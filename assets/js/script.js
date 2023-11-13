@@ -150,7 +150,7 @@ function displaySearchHistory() {
 }
 
 function callAPI(event, searchTerm) {
-    
+
     event.preventDefault()
 if (searchTerm) {
     searchInput.value = searchTerm;
@@ -176,7 +176,7 @@ if (searchTerm) {
             // Create a div element for today's forecast
             const currentWeatherDiv = generateCurrentWeather(cityName, date, icon, temp, wind, humidity);
 
-            fetch(`http://api.openweathermap.org/data/2.5/forecast?q=${searchInput.value}&appid=${apiKey}&units=imperial&timezone=America/Chicago`)
+            fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${searchInput.value}&appid=${apiKey}&units=imperial&timezone=America/Chicago`)
                 .then(function (response) {
                     return response.json();
                 })
