@@ -6,11 +6,11 @@ var forecastEl = document.getElementById('five-day');
 var recentSearchEl = document.getElementById('recent-search');
 
 // Function to create a div element with current weather details
-function generateCurrentWeather(cityName, date, icon, maxTemp, wind, humidity) {
+function generateCurrentWeather(cityName, date, icon, temp, wind, humidity) {
     const currentWeatherDiv = document.createElement('div');
     currentWeatherDiv.className = 'display-current';
 
-    const dateHeading = document.createElement('h3');
+    const dateHeading = document.createElement('h2');
     dateHeading.textContent = `${cityName} (${date})`;
     currentWeatherDiv.append(dateHeading);
 
@@ -25,10 +25,10 @@ function generateCurrentWeather(cityName, date, icon, maxTemp, wind, humidity) {
     weatherIconItem.append(iconImage);
     detailsList.append(weatherIconItem);
 
-    // Max Temperature
-    const maxTempItem = document.createElement('li');
-    maxTempItem.textContent = `Max Temperature: ${maxTemp}°F`;
-    detailsList.append(maxTempItem);
+    // Temperature
+    const tempItem = document.createElement('li');
+    tempItem.textContent = `Max Temperature: ${temp}° F`;
+    detailsList.append(tempItem);
 
     // Wind
     const windItem = document.createElement('li');
@@ -51,7 +51,7 @@ function generateForecast(date, icon, maxTemp, wind, humidity) {
     const forecastDiv = document.createElement('div');
     forecastDiv.className = 'day-box';
 
-    const dateHeading = document.createElement('h3');
+    const dateHeading = document.createElement('h4');
     dateHeading.textContent = date;
     forecastDiv.append(dateHeading);
 
@@ -68,7 +68,7 @@ function generateForecast(date, icon, maxTemp, wind, humidity) {
 
     // Max Temperature
     const maxTempItem = document.createElement('li');
-    maxTempItem.textContent = `Max Temperature: ${maxTemp}°F`;
+    maxTempItem.textContent = `Temp: ${maxTemp}° F`;
     detailsList.append(maxTempItem);
 
     // Wind
@@ -85,41 +85,78 @@ function generateForecast(date, icon, maxTemp, wind, humidity) {
     forecastEl.append(forecastDiv);
     return forecastDiv;
 }
+
+function convertUnixToDate(unixTimestamp) {
+    const date = new Date(unixTimestamp * 1000);
+
+    // Get the various components of the date
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-based, so add 1
+    const day = String(date.getDate()).padStart(2, '0');
+
+    // Format the date as a string
+    const formattedDate = `${year}-${month}-${day}`;
+
+    return formattedDate;
+}
+
 // Function to save search to local storage
 function saveSearchToLocalStorage(searchTerm) {
     // Check if there is already a search history in local storage
     let searchHistory = JSON.parse(localStorage.getItem('searchHistory')) || [];
 
-    // Add the current search term to the search history array
-    searchHistory.push(searchTerm);
+    // Check for duplicates before adding the current search term
+    if (!searchHistory.includes(searchTerm)) {
+        // Add the current search term to the search history array
+        searchHistory.push(searchTerm);
 
-    // Save the updated search history back to local storage
-    localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+        // Save the updated search history back to local storage
+        localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+    }
 }
 
-// Function to display search history
+// Function to display search history as clickable buttons
 function displaySearchHistory() {
     // Retrieve search history from local storage
     const searchHistory = JSON.parse(localStorage.getItem('searchHistory')) || [];
-
-    // Display search history in some element on your page
-    // For example, you can create a list and append it to a container element
     recentSearchEl.innerHTML = '';
 
     const historyList = document.createElement('ul');
+
+    // Reverse the searchHistory array so that the most recent result is on top
+    searchHistory.reverse();
+
     searchHistory.forEach(searchTerm => {
         const listItem = document.createElement('li');
-        listItem.textContent = searchTerm;
+        const button = document.createElement('button');
+        button.className = 'history-button'
+
+        // Set button text to the search term
+        button.textContent = searchTerm;
+
+        // Attach a click event listener to each button
+        button.addEventListener('click', function (event) { 
+            callAPI(event, searchTerm);
+        });
+
+        // Append the button to the list item
+        listItem.appendChild(button);
+
+        // Append the list item to the list
         historyList.appendChild(listItem);
     });
 
     recentSearchEl.appendChild(historyList);
 }
 
-function callAPI(event) {
+function callAPI(event, searchTerm) {
+    
     event.preventDefault()
+if (searchTerm) {
+    searchInput.value = searchTerm;
+}
 
-    fetch(`http://api.openweathermap.org/data/2.5/forecast?q=${searchInput.value}&appid=${apiKey}&units=imperial`)
+    fetch(`https://api.openweathermap.org/data/2.5/weather?q=${searchInput.value}&appid=${apiKey}&timezone=America/Chicago&units=imperial`)
         .then(function (response) {
             return response.json();
         })
@@ -127,85 +164,87 @@ function callAPI(event) {
             console.log(data);
 
             currentWeatherEl.innerHTML = '';
-            // Map function creates a new array containing the extracted date part (entry.dt_txt.split(' ')[0]) from each entry's dt_txt property in the data.list array
-            const datesArray = data.list.map(entry => entry.dt_txt.split(' ')[0]);
-            // Set object automatically removes duplicate values and creates a new set from datesArray. Spread operator (...) converts the set back into an array.
-            const uniqueDatesArray = [...new Set(datesArray)];
 
-            // Takes today's date (first date from the array)
-            const todaysDate = uniqueDatesArray[0];
+            const cityName = data.name;
+            const date = convertUnixToDate(data.dt);
+            const icon = data.weather[0].icon;
+            const temp = data.main.temp;
+            const wind = data.wind.speed;
+            const humidity = data.main.humidity;
 
-            // Filter function creates a new array (currentWeather) containing only the entries whose date matches today's date.
-            const currentWeather = data.list.filter(entry => entry.dt_txt.split(' ')[0] === todaysDate);
-
-            const cityName = data.city.name;
-
-            // Sort the currentWeather array by max temperature in descending order
-            currentWeather.sort((a, b) => b.main.temp_max - a.main.temp_max);
-            // Retrieve the entry with the highest max temperature
-            const highestMaxTempEntry = currentWeather[0];
-
-            // Extract information from the highest max temperature entry
-            const date = highestMaxTempEntry.dt_txt.split(' ')[0];
-            const icon = highestMaxTempEntry.weather[0].icon;
-            const maxTemp = highestMaxTempEntry.main.temp_max;
-            const wind = highestMaxTempEntry.wind.speed;
-            const humidity = highestMaxTempEntry.main.humidity;
-
-
+            console.log(date);
             // Create a div element for today's forecast
-            const currentWeatherDiv = generateCurrentWeather(cityName, date, icon, maxTemp, wind, humidity);
+            const currentWeatherDiv = generateCurrentWeather(cityName, date, icon, temp, wind, humidity);
+
+            fetch(`http://api.openweathermap.org/data/2.5/forecast?q=${searchInput.value}&appid=${apiKey}&units=imperial&timezone=America/Chicago`)
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (data) {
+                    console.log(data);
+
+                    // // Map function creates a new array containing the extracted date part (entry.dt_txt.split(' ')[0]) from each entry's dt_txt property in the data.list array
+                    const datesArray = data.list.map(entry => entry.dt_txt.split(' ')[0]);
+                    // // Set object automatically removes duplicate values and creates a new set from datesArray. Spread operator (...) converts the set back into an array.
+                    const uniqueDatesArray = [...new Set(datesArray)];
+
+                    forecastEl.innerHTML = '';
+                    var fiveDayTitleEl = document.createElement('div');
+                    fiveDayTitleEl.className = ('five-day-title');
+                    var fiveDayTitle = document.createElement('h3');
+                    fiveDayTitle.textContent = '5-Day Forecast:';
+                    fiveDayTitleEl.append(fiveDayTitle);
+                    forecastEl.append(fiveDayTitleEl);
+
+                    // Create a div element for the next 5 days forecast
+                    const forecastContainer = document.createElement('div');
+                    forecastContainer.className = 'five-days-forecast';
+
+                    // Skip the first date and loop through the rest
+                    for (let i = 0; i < uniqueDatesArray.length; i++) {
+                        const remainingDays = uniqueDatesArray[i];
+
+                        // Filter entries for the remaining dates
+                        const fiveDayForecast = data.list.filter(entry => entry.dt_txt.split(' ')[0] === remainingDays);
 
 
-            forecastEl.innerHTML = '';
-            var fiveDayTitle = document.createElement('h3');
-            fiveDayTitle.textContent = '5-Day Forecast:';
-            forecastEl.append(fiveDayTitle);
+                        // Sort the fiveDayForecast array by max temperature in descending order
+                        fiveDayForecast.sort((a, b) => b.main.temp_max - a.main.temp_max);
 
-            // Skip the first date and loop through the rest
-            for (let i = 1; i < uniqueDatesArray.length; i++) {
-                const remainingDays = uniqueDatesArray[i];
+                        // Retrieve the entry with the highest max temperature
+                        const highestMaxTempEntry = fiveDayForecast[0];
 
-                // Filter entries for the remaining dates
-                const fiveDayForecast = data.list.filter(entry => entry.dt_txt.split(' ')[0] === remainingDays);
-                // Create a div element for the next 5 days forecast
+                        // Extract information from the highest max temperature entry
+                        const date = highestMaxTempEntry.dt_txt.split(' ')[0];
+                        const icon = highestMaxTempEntry.weather[0].icon;
+                        const maxTemp = highestMaxTempEntry.main.temp_max;
+                        const wind = highestMaxTempEntry.wind.speed;
+                        const humidity = highestMaxTempEntry.main.humidity;
 
-                const fiveDaysWeatherDiv = document.createElement('div');
-                fiveDaysWeatherDiv.className = 'five-days-forecast';
+                        // Create a div element for the day's forecast
+                        const forecastDiv = generateForecast(date, icon, maxTemp, wind, humidity);
 
-                // Sort the fiveDayForecast array by max temperature in descending order
-                fiveDayForecast.sort((a, b) => b.main.temp_max - a.main.temp_max);
+                        forecastContainer.append(forecastDiv);
+                    }
 
-                // Retrieve the entry with the highest max temperature
-                const highestMaxTempEntry = fiveDayForecast[0];
+                    forecastEl.append(forecastContainer);
 
-                // Extract information from the highest max temperature entry
-                const date = highestMaxTempEntry.dt_txt.split(' ')[0];
-                const icon = highestMaxTempEntry.weather[0].icon;
-                const maxTemp = highestMaxTempEntry.main.temp_max;
-                const wind = highestMaxTempEntry.wind.speed;
-                const humidity = highestMaxTempEntry.main.humidity;
+                    // Save the search to local storage
+                    saveSearchToLocalStorage(cityName);
 
-                // Create a div element for the day's forecast
-                const forecastDiv = generateForecast(date, icon, maxTemp, wind, humidity);
-
-                // Append the day div to the fiveDaysWeatherDiv
-                fiveDaysWeatherDiv.append(forecastDiv);
-
-
-                // Append the day div to forecastEl
-                forecastEl.append(fiveDaysWeatherDiv);
-            }
-            // Save the search to local storage
-            saveSearchToLocalStorage(cityName);
-
-            // Retrieve and display search history
-            displaySearchHistory();
+                    // Retrieve and display search history
+                    displaySearchHistory();
+                })
+                .catch(error => {
+                    console.error('Error:', error.message);
+                });
         })
-        .catch(error => {
-            console.error('Error:', error.message);
-        });
-
 }
 
+// Call displaySearchHistory after the page has loaded to initially populate the search history
+document.addEventListener('DOMContentLoaded', function () {
+    displaySearchHistory();
+});
+
 searchBtnEl.addEventListener("click", callAPI);
+
