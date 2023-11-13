@@ -41,8 +41,6 @@ function generateCurrentWeather(cityName, date, icon, temp, wind, humidity) {
     detailsList.append(humidityItem);
 
     currentWeatherDiv.append(detailsList);
-
-    // Append currentWeatherDiv to the currentWeatherEl 
     currentWeatherEl.append(currentWeatherDiv);
 }
 
@@ -109,7 +107,6 @@ function saveSearchToLocalStorage(searchTerm) {
     if (!searchHistory.includes(searchTerm)) {
         // Add the current search term to the search history array
         searchHistory.push(searchTerm);
-
         // Save the updated search history back to local storage
         localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
     }
@@ -134,15 +131,12 @@ function displaySearchHistory() {
         // Set button text to the search term
         button.textContent = searchTerm;
 
-        // Attach a click event listener to each button
-        button.addEventListener('click', function (event) { 
+        // Attach a click event listener to each button to retrieve the respective forecast information
+        button.addEventListener('click', function (event) {
             callAPI(event, searchTerm);
         });
 
-        // Append the button to the list item
         listItem.appendChild(button);
-
-        // Append the list item to the list
         historyList.appendChild(listItem);
     });
 
@@ -150,11 +144,12 @@ function displaySearchHistory() {
 }
 
 function callAPI(event, searchTerm) {
-
     event.preventDefault()
-if (searchTerm) {
-    searchInput.value = searchTerm;
-}
+
+    // If search history exists in local storage, it will set searchTerm to searchInput.value so that it can be passed through the fetch URL, allowing users to view those forecast results again
+    if (searchTerm) {
+        searchInput.value = searchTerm;
+    }
 
     fetch(`https://api.openweathermap.org/data/2.5/weather?q=${searchInput.value}&appid=${apiKey}&timezone=America/Chicago&units=imperial`)
         .then(function (response) {
@@ -172,8 +167,6 @@ if (searchTerm) {
             const wind = data.wind.speed;
             const humidity = data.main.humidity;
 
-            console.log(date);
-            // Create a div element for today's forecast
             const currentWeatherDiv = generateCurrentWeather(cityName, date, icon, temp, wind, humidity);
 
             fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${searchInput.value}&appid=${apiKey}&units=imperial&timezone=America/Chicago`)
@@ -183,9 +176,9 @@ if (searchTerm) {
                 .then(function (data) {
                     console.log(data);
 
-                    // // Map function creates a new array containing the extracted date part (entry.dt_txt.split(' ')[0]) from each entry's dt_txt property in the data.list array
+                    // Map function creates a new array containing the extracted date part (entry.dt_txt.split(' ')[0]) from each entry's dt_txt property in the data.list array
                     const datesArray = data.list.map(entry => entry.dt_txt.split(' ')[0]);
-                    // // Set object automatically removes duplicate values and creates a new set from datesArray. Spread operator (...) converts the set back into an array.
+                    // Set object automatically removes duplicate values and creates a new set from datesArray. Spread operator (...) converts the set back into an array.
                     const uniqueDatesArray = [...new Set(datesArray)];
 
                     forecastEl.innerHTML = '';
@@ -200,13 +193,11 @@ if (searchTerm) {
                     const forecastContainer = document.createElement('div');
                     forecastContainer.className = 'five-days-forecast';
 
-                    // Skip the first date and loop through the rest
                     for (let i = 0; i < uniqueDatesArray.length; i++) {
                         const remainingDays = uniqueDatesArray[i];
 
-                        // Filter entries for the remaining dates
+                        // Filter entries in the array 
                         const fiveDayForecast = data.list.filter(entry => entry.dt_txt.split(' ')[0] === remainingDays);
-
 
                         // Sort the fiveDayForecast array by max temperature in descending order
                         fiveDayForecast.sort((a, b) => b.main.temp_max - a.main.temp_max);
@@ -221,7 +212,7 @@ if (searchTerm) {
                         const wind = highestMaxTempEntry.wind.speed;
                         const humidity = highestMaxTempEntry.main.humidity;
 
-                        // Create a div element for the day's forecast
+                        // Create a div element for each day's forecast
                         const forecastDiv = generateForecast(date, icon, maxTemp, wind, humidity);
 
                         forecastContainer.append(forecastDiv);
@@ -229,10 +220,7 @@ if (searchTerm) {
 
                     forecastEl.append(forecastContainer);
 
-                    // Save the search to local storage
                     saveSearchToLocalStorage(cityName);
-
-                    // Retrieve and display search history
                     displaySearchHistory();
                 })
                 .catch(error => {
@@ -247,4 +235,3 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 searchBtnEl.addEventListener("click", callAPI);
-
