@@ -20,7 +20,7 @@ This is what it looks like when you search another item. ![Notice how the most r
 
 I used OpenWeather API to retrieve weather data. I used [this link](https://openweathermap.org/current) to retrieve the current weather for a given city, and [this link](https://openweathermap.org/forecast5) to retrieve the five day forecast. 
 
-I referenced [this](https://www.geeksforgeeks.org/how-to-convert-unix-timestamp-to-time-in-javascript/#) to convert the UNIX code to year/month/day. 
+I referenced [this](https://www.geeksforgeeks.org/how-to-convert-unix-timestamp-to-time-in-javascript/#) to convert the UNIX code to year/month/day. I also referenced [this link](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set) to pull unique dates from an array for the forecast.
 
 I also received some guidance from the Xpert Learning Assistant on BCS. I also referenced code from previous class activities. 
 
